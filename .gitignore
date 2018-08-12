@@ -30,3 +30,29 @@
 *.exe
 *.out
 *.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# VIM
+*.swp
+
+# CLion
+.idea/
+cmake-build-debug/
+
+# Visual Studio
+.vs/
+CMakeSettings.json
+
+# Misc Directories
+build/
+
