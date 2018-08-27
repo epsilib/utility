@@ -1,7 +1,7 @@
-#ifndef EPSILIB_TICTOC_HPP_INCLUDED
-#define EPSILIB_TICTOC_HPP_INCLUDED
+#ifndef EPSILIB_UTILITY_TICTOC_HPP_INCLUDED
+#define EPSILIB_UTILITY_TICTOC_HPP_INCLUDED
 
-#include <memory>
+#include <chrono>
 #include <vector>
 #include <string>
 #include <sstream>
@@ -11,76 +11,55 @@
 namespace epsilib { namespace utility {
 
 
-
 class TicTocTimer {
  public:
-  virtual void tic() = 0;    // starts the timer
-  virtual double toc() = 0;  // returns timer value in seconds
-  double get_elapsed() const {return log_.back();}
-  double get_mean_elapsed()  const {return epsilib::utility::mean(log_);} 
-  double get_max_elapsed()   const {return epsilib::utility::max(log_);} 
-  double get_min_elapsed()   const {return epsilib::utility::min(log_);} 
-  double get_stdev_elapsed() const {return epsilib::utility::stdev(log_);} 
-  void clear_log() {log_.clear();}
-  std::string comment;
-  std::string stat_string() const;
-
- protected:
-  double log_elapsed(double value) {log_.push_back(value); return value;}
-
- private:
-  std::vector<double> log_;
+  inline void tic(){
+    m_tic_time = std::chrono::high_resolution_clock::now();
+  }
+  inline double toc(){
+    m_toc_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = m_toc_time - m_tic_time;
+    return elapsed.count();  // return elapsed time in seconds
+  }
+private:
+  std::chrono::high_resolution_clock::time_point m_tic_time;
+  std::chrono::high_resolution_clock::time_point m_toc_time;
 };
 
-class SystemTicTocTimer : public TicTocTimer {
- public:
-  virtual void tic();
-  virtual double toc();
-  SystemTicTocTimer();
-  ~SystemTicTocTimer();
-  SystemTicTocTimer(SystemTicTocTimer&& rhs);
-  SystemTicTocTimer& operator=(SystemTicTocTimer&& rhs);
-  SystemTicTocTimer(SystemTicTocTimer& rhs);
-  SystemTicTocTimer& operator=(SystemTicTocTimer& rhs);
 
- protected:
-  class Impl;  // PIMPL Idiom
-  std::unique_ptr<Impl> pImpl;
-};
+class TicTocLogger {
+public:
+  TicTocLogger(std::string comment = "") : m_comment(comment) {}
+  inline void tic() {
+    m_tic_toc_timer.tic();
+  }
+  inline void toc() {
+    m_log.push_back(m_tic_toc_timer.toc());
+  };
+  double elapsed() const {return m_log.back();}
+  double mean_elapsed()  const {return epsilib::utility::mean(m_log);} 
+  double max_elapsed()   const {return epsilib::utility::max(m_log);} 
+  double min_elapsed()   const {return epsilib::utility::min(m_log);} 
+  double stdev_elapsed() const {return epsilib::utility::stdev(m_log);} 
+  const std::vector<double> &log() const {return m_log;}
+  void clear_log() {m_log.clear();}
+  std::string stat_string() const {
+    std::ostringstream ss;
+    ss << m_comment
+       << "  mean: "     << epsilib::utility::to_eng_string(mean_elapsed())
+       << "     max: "   << epsilib::utility::to_eng_string(max_elapsed())
+       << "     min: "   << epsilib::utility::to_eng_string(min_elapsed())
+       << "     stdev: " << epsilib::utility::to_eng_string(stdev_elapsed());
+    return ss.str();
+  }
 
-class ProcessTicTocTimer : public TicTocTimer {
- public:
-  virtual void tic();
-  virtual double toc();
-  ProcessTicTocTimer();
-  ~ProcessTicTocTimer();
-  ProcessTicTocTimer(ProcessTicTocTimer&& rhs);
-  ProcessTicTocTimer& operator=(ProcessTicTocTimer&& rhs);
-  ProcessTicTocTimer(ProcessTicTocTimer& rhs);
-  ProcessTicTocTimer& operator=(ProcessTicTocTimer& rhs);
-
- protected:
-  class Impl;  // PIMPL Idiom
-  std::unique_ptr<Impl> pImpl;
-};
-
-class ThreadTicTocTimer : public TicTocTimer {
- public:
-  virtual void tic();
-  virtual double toc();
-  ThreadTicTocTimer();
-  ~ThreadTicTocTimer();
-  ThreadTicTocTimer(ThreadTicTocTimer&& rhs);
-  ThreadTicTocTimer& operator=(ThreadTicTocTimer&& rhs);
-  ThreadTicTocTimer(ThreadTicTocTimer& rhs);
-  ThreadTicTocTimer& operator=(ThreadTicTocTimer& rhs);
-
- protected:
-  class Impl;  // PIMPL Idiom
-  std::unique_ptr<Impl> pImpl;
+private:
+  const std::string m_comment;
+  TicTocTimer m_tic_toc_timer;
+  std::vector<double> m_log;
 };
 
 
 } }  // namespace epsilib::utility
 
-#endif  // EPSILIB_TICTOC_HPP_INCLUDED
+#endif  // EPSILIB_UTILITY_TICTOC_HPP_INCLUDED
