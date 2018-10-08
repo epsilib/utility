@@ -5,11 +5,18 @@
 #include <string>
 #include <iomanip>
 
+#include <type_traits>
+#include <typeinfo>
+#ifndef _MSC_VER
+#   include <cxxabi.h>
+#endif
+#include <memory>
+#include <cstdlib>
+
 namespace epsilib { namespace utility {
 
-//
-//  to_eng_string function
-//
+
+// Convert floating point number to a string using engineering notation
 template <typename T>
 std::string to_eng_string(T value, int precision = 3, bool fixed_width = true) {
 
@@ -65,6 +72,35 @@ std::string to_eng_string(T value, int precision = 3, bool fixed_width = true) {
   return ss.str();
 }
 
+
+// Convert a C++ type to a string.
+// This function is based on the following:
+// https://stackoverflow.com/questions/81870/is-it-possible-to-print-a-variables-type-in-standard-c
+template <typename T>
+std::string type2str() {
+
+  using TR = typename std::remove_reference_t<T>;
+
+  std::unique_ptr<char, void(*)(void*)> own(
+#   ifndef _MSC_VER
+      abi::__cxa_demangle(typeid(TR).name(), nullptr, nullptr, nullptr),
+#   else
+      nullptr,
+#   endif
+    std::free
+  );
+
+  std::string r = (own != nullptr ? own.get() : typeid(TR).name());
+
+  if (std::is_const<TR>::value)     r += " const";
+
+  if (std::is_volatile<TR>::value)  r += " volatile";
+
+  if (std::is_lvalue_reference<T>::value)      r += "&";
+  else if (std::is_rvalue_reference<T>::value) r += "&&";
+
+  return r;
+}
 
 
 } }  // namespace epsilib::utility
